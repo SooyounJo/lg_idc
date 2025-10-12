@@ -30,7 +30,6 @@ const VoiceChat = () => {
       const chatResponse = await axios.post('/api/chat', {
         message: text,
         conversationHistory: conversationHistory,
-        customPrompt: DEFAULT_AI.getSystemPrompt(),
       }, {
         timeout: 30000, // 30초 타임아웃
       })

@@ -1,5 +1,6 @@
 import { OpenAI } from 'openai'
 import { OPENAI_API_KEY } from '@/config/apiKey'
+import { DEFAULT_AI, CONVERSATION_CONFIG } from '@/utils/prompts'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
       apiKey: OPENAI_API_KEY,
     })
 
-    const { message } = req.body
+    const { message, conversationHistory = [] } = req.body
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' })
@@ -23,12 +24,13 @@ export default async function handler(req, res) {
     
     console.log('User message:', message)
 
-    // 아주 기본적인 메시지 구성
+    // 퓨론 프롬프트를 사용한 메시지 구성
     const messages = [
       {
         role: 'system',
-        content: '당신은 친절한 AI 어시스턴트입니다. 한국어로 짧게 대답해주세요.',
+        content: DEFAULT_AI.getSystemPrompt(),
       },
+      ...conversationHistory,
       {
         role: 'user',
         content: message,
@@ -36,12 +38,14 @@ export default async function handler(req, res) {
     ]
 
     console.log('🔄 Calling OpenAI API...')
+    console.log('Model:', CONVERSATION_CONFIG.model)
     
-    // 가장 기본적인 API 호출
+    // API 호출
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: CONVERSATION_CONFIG.model,
       messages: messages,
-      max_tokens: 100,
+      temperature: CONVERSATION_CONFIG.temperature,
+      max_tokens: CONVERSATION_CONFIG.max_tokens,
     })
 
     const aiResponse = completion?.choices?.[0]?.message?.content
