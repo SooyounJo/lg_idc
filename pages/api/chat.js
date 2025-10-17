@@ -1,5 +1,4 @@
 import { OpenAI } from 'openai'
-import { OPENAI_API_KEY } from '@/config/apiKey'
 import { DEFAULT_AI, CONVERSATION_CONFIG } from '@/utils/prompts'
 
 export default async function handler(req, res) {
@@ -8,12 +7,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const apiKey = process.env.OPENAI_API_KEY
+    
     console.log('=== Chat API Called ===')
-    console.log('API Key exists:', !!OPENAI_API_KEY)
-    console.log('API Key length:', OPENAI_API_KEY.length)
+    console.log('API Key exists:', !!apiKey)
+    
+    if (!apiKey) {
+      return res.status(500).json({ 
+        error: 'API key not configured',
+        details: 'OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.'
+      })
+    }
     
     const openai = new OpenAI({
-      apiKey: OPENAI_API_KEY,
+      apiKey: apiKey,
     })
 
     const { message, conversationHistory = [] } = req.body
@@ -61,11 +68,33 @@ export default async function handler(req, res) {
       usage: completion.usage,
     })
   } catch (error) {
-    console.error('❌ Chat error:', error.message)
+    console.error('❌ Chat error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      status: error.status,
+      type: error.type,
+      code: error.code,
+    })
+    
+    // OpenAI API 에러 처리
+    if (error.status === 401) {
+      return res.status(401).json({
+        error: 'Invalid API key',
+        details: 'OpenAI API 키가 유효하지 않습니다.',
+      })
+    }
+    
+    if (error.status === 429) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        details: 'API 사용 한도를 초과했습니다.',
+      })
+    }
     
     return res.status(500).json({
       error: 'Failed to get AI response',
       details: error.message,
+      errorType: error.type || 'unknown',
     })
   }
 }

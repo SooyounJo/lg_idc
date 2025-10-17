@@ -1,11 +1,11 @@
 import ThreeScene from '@/components/ThreeScene'
-import VoiceChat from '@/components/VoiceChat'
+import TextChat from '@/components/TextChat'
 
 export default function Home() {
   return (
     <main>
       <ThreeScene />
-      <VoiceChat />
+      <TextChat />
     </main>
   )
 }
